@@ -1,0 +1,57 @@
+local userInputService = game:GetService("UserInputService")
+local players = game:GetService("Players")
+local player = players.LocalPlayer
+local mouse = player:GetMouse()
+local entitiesFolder = workspace:FindFirstChild("Entities")
+
+local toggle = false
+
+local function notify(message)
+    game.StarterGui:SetCore("SendNotification", {
+        Title = "Script Notification";
+        Text = message;
+        Duration = 2;
+    })
+end
+
+userInputService.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+    if input.KeyCode == Enum.KeyCode.K then
+        toggle = not toggle
+        notify("Script " .. (toggle and "Enabled" or "Disabled"))
+    end
+end)
+
+local function isPlayerCharacter(character)
+    for _, plr in pairs(players:GetPlayers()) do
+        if plr.Character == character then
+            return true
+        end
+    end
+    return false
+end
+
+local function getEntityFromPart(part)
+    if not entitiesFolder then return nil end
+
+    local parent = part.Parent
+    if parent and entitiesFolder:FindFirstChild(parent.Name) then
+        return parent
+    end
+    return nil
+end
+
+mouse.Button1Down:Connect(function()
+    if not toggle then return end
+
+    local target = mouse.Target
+    if not target then return end
+
+    local entity = getEntityFromPart(target)
+    if entity and entity:FindFirstChild("Humanoid") then
+        if isPlayerCharacter(entity) then
+            return
+        end
+        entity.Humanoid.Health = 0
+    end
+end)
