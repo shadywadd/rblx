@@ -33,6 +33,7 @@ local function createESP(npc)
     billboard.StudsOffset = Vector3.new(0, 3, 0)
     billboard.Adornee = rootPart
     billboard.AlwaysOnTop = true
+    billboard.MaxDistance = 30000 -- 🟢 Now renders at 30,000 studs!
     billboard.Parent = rootPart
 
     -- Text Label
