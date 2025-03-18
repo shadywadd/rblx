@@ -2,11 +2,17 @@
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Workspace = game:GetService("Workspace")
 
 local NPCHolder = ReplicatedStorage:WaitForChild("NPCHolder")
 local player = Players.LocalPlayer
 local character = player.Character or player.CharacterAdded:Wait()
 local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+
+-- Create ESP Folder in Workspace
+local ESPFolder = Instance.new("Folder")
+ESPFolder.Name = "NPC_ESP"
+ESPFolder.Parent = Workspace
 
 -- ESP Toggle & Storage
 local espEnabled = true
@@ -15,26 +21,26 @@ local espObjects = {}
 -- Function to create ESP
 local function createESP(npc)
     if not npc:IsA("Model") then return end
-    local rootPart = npc:FindFirstChild("HumanoidRootPart")
-    if not rootPart then return end
+    local worldPivot = npc:GetPivot() -- Get world position
 
-    -- Highlight NPC
-    local highlight = Instance.new("BoxHandleAdornment")
-    highlight.Size = Vector3.new(3, 6, 3) -- Approximate size for highlight
-    highlight.Adornee = rootPart
-    highlight.AlwaysOnTop = true
-    highlight.ZIndex = 5
-    highlight.Color3 = Color3.fromRGB(0, 255, 0) -- Green
-    highlight.Parent = rootPart
+    -- Green ESP Box
+    local highlight = Instance.new("Part")
+    highlight.Size = Vector3.new(3, 6, 3) -- Approximate size
+    highlight.Position = worldPivot.Position
+    highlight.Anchored = true
+    highlight.Color = Color3.fromRGB(0, 255, 0) -- Green
+    highlight.Material = Enum.Material.Neon
+    highlight.CanCollide = false
+    highlight.Parent = ESPFolder
 
-    -- Create Billboard for text
+    -- Billboard GUI for Text
     local billboard = Instance.new("BillboardGui")
     billboard.Size = UDim2.new(0, 200, 0, 50)
-    billboard.StudsOffset = Vector3.new(0, 3, 0)
-    billboard.Adornee = rootPart
+    billboard.StudsOffset = Vector3.new(0, 5, 0)
+    billboard.Adornee = highlight
     billboard.AlwaysOnTop = true
-    billboard.MaxDistance = 30000 -- 🟢 Now renders at 30,000 studs!
-    billboard.Parent = rootPart
+    billboard.MaxDistance = math.huge -- Infinite render distance
+    billboard.Parent = highlight
 
     -- Text Label
     local textLabel = Instance.new("TextLabel")
@@ -57,24 +63,20 @@ local function updateESP()
             createESP(npc)
         end
 
-        local rootPart = npc:FindFirstChild("HumanoidRootPart")
-        if rootPart then
-            local distance = (rootPart.Position - humanoidRootPart.Position).Magnitude
-            local espData = espObjects[npc]
+        local worldPivot = npc:GetPivot()
+        local distance = (worldPivot.Position - humanoidRootPart.Position).Magnitude
+        local espData = espObjects[npc]
 
-            if espData then
-                espData.textLabel.Text = npc.Name .. " | " .. math.floor(distance) .. " studs"
-            end
+        if espData then
+            espData.highlight.Position = worldPivot.Position
+            espData.textLabel.Text = npc.Name .. " | " .. math.floor(distance) .. " studs"
         end
     end
 end
 
 -- Function to remove all ESP
 local function removeESP()
-    for _, data in pairs(espObjects) do
-        if data.highlight then data.highlight:Destroy() end
-        if data.billboard then data.billboard:Destroy() end
-    end
+    ESPFolder:ClearAllChildren()
     espObjects = {}
 end
 
