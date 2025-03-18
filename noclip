@@ -1,0 +1,33 @@
+local userInputService = game:GetService("UserInputService")
+local players = game:GetService("Players")
+
+local player = players.LocalPlayer
+local toggled = false
+
+local function setCollision(state)
+    if not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then
+        print("Character or HumanoidRootPart not found.")
+        return
+    end
+
+    local hrp = player.Character.HumanoidRootPart
+    local position = hrp.Position
+
+    for _, part in ipairs(workspace:GetDescendants()) do
+        if part:IsA("BasePart") and (part.Position - position).Magnitude <= 20 then
+            part.CanCollide = state
+        end
+    end
+end
+
+local function toggleNoclip()
+    toggled = not toggled
+    setCollision(not toggled) -- If toggled on, disable collisions. If toggled off, enable them.
+    print("Noclip:", toggled and "ON" or "OFF")
+end
+
+userInputService.InputBegan:Connect(function(input, gameProcessed)
+    if not gameProcessed and input.KeyCode == Enum.KeyCode.J then
+        toggleNoclip()
+    end
+end)
