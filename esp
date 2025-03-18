@@ -1,27 +1,33 @@
+-- Services
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local NPCHolder = ReplicatedStorage:WaitForChild("NPCHolder")
 
+local NPCHolder = ReplicatedStorage:WaitForChild("NPCHolder")
 local player = Players.LocalPlayer
 local character = player.Character or player.CharacterAdded:Wait()
 local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
 
+-- ESP Toggle & Storage
 local espEnabled = true
 local espObjects = {}
 
+-- Function to create ESP
 local function createESP(npc)
+    if not npc:IsA("Model") then return end
     local rootPart = npc:FindFirstChild("HumanoidRootPart")
     if not rootPart then return end
 
+    -- Highlight NPC
     local highlight = Instance.new("BoxHandleAdornment")
-    highlight.Size = rootPart.Size + Vector3.new(0.2, 0.2, 0.2)
+    highlight.Size = Vector3.new(3, 6, 3) -- Approximate size for highlight
     highlight.Adornee = rootPart
     highlight.AlwaysOnTop = true
     highlight.ZIndex = 5
-    highlight.Color3 = Color3.fromRGB(0, 255, 0) -- Green color
+    highlight.Color3 = Color3.fromRGB(0, 255, 0) -- Green
     highlight.Parent = rootPart
 
+    -- Create Billboard for text
     local billboard = Instance.new("BillboardGui")
     billboard.Size = UDim2.new(0, 200, 0, 50)
     billboard.StudsOffset = Vector3.new(0, 3, 0)
@@ -29,18 +35,21 @@ local function createESP(npc)
     billboard.AlwaysOnTop = true
     billboard.Parent = rootPart
 
+    -- Text Label
     local textLabel = Instance.new("TextLabel")
     textLabel.Size = UDim2.new(1, 0, 1, 0)
     textLabel.BackgroundTransparency = 1
-    textLabel.TextColor3 = Color3.fromRGB(255, 255, 255) -- White color
+    textLabel.TextColor3 = Color3.fromRGB(255, 255, 255) -- White
     textLabel.TextStrokeTransparency = 0
     textLabel.TextScaled = true
     textLabel.Font = Enum.Font.SourceSansBold
     textLabel.Parent = billboard
 
+    -- Store ESP objects
     espObjects[npc] = {highlight = highlight, billboard = billboard, textLabel = textLabel}
 end
 
+-- Function to update ESP
 local function updateESP()
     for _, npc in pairs(NPCHolder:GetChildren()) do
         if not espObjects[npc] then
@@ -59,6 +68,7 @@ local function updateESP()
     end
 end
 
+-- Function to remove all ESP
 local function removeESP()
     for _, data in pairs(espObjects) do
         if data.highlight then data.highlight:Destroy() end
@@ -67,6 +77,7 @@ local function removeESP()
     espObjects = {}
 end
 
+-- Toggle ESP with "K" key
 local UserInputService = game:GetService("UserInputService")
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if gameProcessed then return end
@@ -78,6 +89,7 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
     end
 end)
 
+-- Constantly check for new NPCs and update distances
 RunService.RenderStepped:Connect(function()
     if espEnabled then
         updateESP()
