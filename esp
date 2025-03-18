@@ -2,57 +2,54 @@
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Workspace = game:GetService("Workspace")
-
 local NPCHolder = ReplicatedStorage:WaitForChild("NPCHolder")
+
+-- Player Reference
 local player = Players.LocalPlayer
 local character = player.Character or player.CharacterAdded:Wait()
 local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
 
--- Create ESP Folder in Workspace
-local ESPFolder = Instance.new("Folder")
-ESPFolder.Name = "NPC_ESP"
-ESPFolder.Parent = Workspace
-
--- ESP Toggle & Storage
+-- ESP Toggle
 local espEnabled = true
-local espObjects = {}
+local espObjects = {} -- Table to store ESP objects
 
 -- Function to create ESP
 local function createESP(npc)
-    if not npc:IsA("Model") then return end
-    local worldPivot = npc:GetPivot() -- Get world position
+    local rootPart = npc:FindFirstChild("HumanoidRootPart")
+    if not rootPart then return end
 
-    -- Green ESP Box
-    local highlight = Instance.new("Part")
-    highlight.Size = Vector3.new(3, 6, 3) -- Approximate size
-    highlight.Position = worldPivot.Position
-    highlight.Anchored = true
-    highlight.Color = Color3.fromRGB(0, 255, 0) -- Green
-    highlight.Material = Enum.Material.Neon
-    highlight.CanCollide = false
-    highlight.Parent = ESPFolder
+    -- Highlight the HumanoidRootPart
+    local highlight = Instance.new("BoxHandleAdornment")
+    highlight.Size = rootPart.Size + Vector3.new(0.2, 0.2, 0.2)
+    highlight.Adornee = rootPart
+    highlight.AlwaysOnTop = true
+    highlight.ZIndex = 5
+    highlight.Color3 = Color3.fromRGB(0, 255, 0) -- Green color
+    highlight.Parent = rootPart
 
-    -- Billboard GUI for Text
+    -- Create a BillboardGui for the name and distance
     local billboard = Instance.new("BillboardGui")
-    billboard.Size = UDim2.new(0, 200, 0, 50)
-    billboard.StudsOffset = Vector3.new(0, 5, 0)
-    billboard.Adornee = highlight
+    billboard.Size = UDim2.new(0, 100, 0, 25) -- Fixed size (100x25 pixels)
+    billboard.StudsOffset = Vector3.new(0, 3, 0)
+    billboard.Adornee = rootPart
     billboard.AlwaysOnTop = true
-    billboard.MaxDistance = math.huge -- Infinite render distance
-    billboard.Parent = highlight
+    billboard.Parent = rootPart
 
-    -- Text Label
+    -- Prevent text from scaling with distance
+    billboard.SizeOffset = Vector2.new(0, 0)
+
+    -- Create text label
     local textLabel = Instance.new("TextLabel")
     textLabel.Size = UDim2.new(1, 0, 1, 0)
     textLabel.BackgroundTransparency = 1
-    textLabel.TextColor3 = Color3.fromRGB(255, 255, 255) -- White
+    textLabel.TextColor3 = Color3.fromRGB(255, 255, 255) -- White color
     textLabel.TextStrokeTransparency = 0
-    textLabel.TextScaled = true
+    textLabel.TextScaled = false -- Disable auto-scaling
+    textLabel.TextSize = 14 -- Fixed text size
     textLabel.Font = Enum.Font.SourceSansBold
     textLabel.Parent = billboard
 
-    -- Store ESP objects
+    -- Store objects
     espObjects[npc] = {highlight = highlight, billboard = billboard, textLabel = textLabel}
 end
 
@@ -63,20 +60,24 @@ local function updateESP()
             createESP(npc)
         end
 
-        local worldPivot = npc:GetPivot()
-        local distance = (worldPivot.Position - humanoidRootPart.Position).Magnitude
-        local espData = espObjects[npc]
+        local rootPart = npc:FindFirstChild("HumanoidRootPart")
+        if rootPart then
+            local distance = (rootPart.Position - humanoidRootPart.Position).Magnitude
+            local espData = espObjects[npc]
 
-        if espData then
-            espData.highlight.Position = worldPivot.Position
-            espData.textLabel.Text = npc.Name .. " | " .. math.floor(distance) .. " studs"
+            if espData then
+                espData.textLabel.Text = npc.Name .. " | " .. math.floor(distance) .. " studs"
+            end
         end
     end
 end
 
 -- Function to remove all ESP
 local function removeESP()
-    ESPFolder:ClearAllChildren()
+    for _, data in pairs(espObjects) do
+        if data.highlight then data.highlight:Destroy() end
+        if data.billboard then data.billboard:Destroy() end
+    end
     espObjects = {}
 end
 
@@ -92,7 +93,7 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
     end
 end)
 
--- Constantly check for new NPCs and update distances
+-- Update ESP every frame
 RunService.RenderStepped:Connect(function()
     if espEnabled then
         updateESP()
