@@ -5,7 +5,6 @@ local mouse = player:GetMouse()
 local entitiesFolder = workspace:FindFirstChild("Entities")
 
 local toggle = false
-local keybind = _G.keybind or "K"  -- Use global variable
 
 local function notify(message)
     game.StarterGui:SetCore("SendNotification", {
@@ -17,7 +16,7 @@ end
 
 userInputService.InputBegan:Connect(function(input, gameProcessed)
     if gameProcessed then return end
-    if input.KeyCode == Enum.KeyCode[keybind] then
+    if input.KeyCode == Enum.KeyCode[Keybind] then
         toggle = not toggle
         notify("Script " .. (toggle and "Enabled" or "Disabled"))
     end
