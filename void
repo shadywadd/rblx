@@ -1,3 +1,5 @@
+Keybind = Keybind or "K"
+
 local userInputService = game:GetService("UserInputService")
 local players = game:GetService("Players")
 local player = players.LocalPlayer
