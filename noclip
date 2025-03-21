@@ -1,100 +1,33 @@
--- Services
-local RunService = game:GetService("RunService")
-local Players = game:GetService("Players")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Workspace = game:GetService("Workspace")
+local userInputService = game:GetService("UserInputService")
+local players = game:GetService("Players")
 
-local NPCHolder = ReplicatedStorage:WaitForChild("NPCHolder")
-local player = Players.LocalPlayer
-local character = player.Character or player.CharacterAdded:Wait()
-local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+local player = players.LocalPlayer
+local toggled = false
 
--- Create ESP Folder in Workspace
-local ESPFolder = Instance.new("Folder")
-ESPFolder.Name = "NPC_ESP"
-ESPFolder.Parent = Workspace
+local function setCollision(state)
+    if not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then
+        print("Character or HumanoidRootPart not found.")
+        return
+    end
 
--- ESP Toggle & Storage
-local espEnabled = true
-local espObjects = {}
+    local hrp = player.Character.HumanoidRootPart
+    local position = hrp.Position
 
--- Function to create ESP
-local function createESP(npc)
-    if not npc:IsA("Model") then return end
-    local worldPivot = npc:GetPivot() -- Get world position
-
-    -- Green ESP Box
-    local highlight = Instance.new("Part")
-    highlight.Size = Vector3.new(3, 6, 3) -- Approximate size
-    highlight.Position = worldPivot.Position
-    highlight.Anchored = true
-    highlight.Color = Color3.fromRGB(0, 255, 0) -- Green
-    highlight.Material = Enum.Material.Neon
-    highlight.CanCollide = false
-    highlight.Parent = ESPFolder
-
-    -- Billboard GUI for Text
-    local billboard = Instance.new("BillboardGui")
-    billboard.Size = UDim2.new(0, 200, 0, 50)
-    billboard.StudsOffset = Vector3.new(0, 5, 0)
-    billboard.Adornee = highlight
-    billboard.AlwaysOnTop = true
-    billboard.MaxDistance = math.huge -- Infinite render distance
-    billboard.Parent = highlight
-
-    -- Text Label
-    local textLabel = Instance.new("TextLabel")
-    textLabel.Size = UDim2.new(1, 0, 1, 0)
-    textLabel.BackgroundTransparency = 1
-    textLabel.TextColor3 = Color3.fromRGB(255, 255, 255) -- White
-    textLabel.TextStrokeTransparency = 0
-    textLabel.TextScaled = false
-    textLabel.Font = Enum.Font.SourceSansBold
-    textLabel.Parent = billboard
-
-    -- Store ESP objects
-    espObjects[npc] = {highlight = highlight, billboard = billboard, textLabel = textLabel}
-end
-
--- Function to update ESP
-local function updateESP()
-    for _, npc in pairs(NPCHolder:GetChildren()) do
-        if not espObjects[npc] then
-            createESP(npc)
-        end
-
-        local worldPivot = npc:GetPivot()
-        local distance = (worldPivot.Position - humanoidRootPart.Position).Magnitude
-        local espData = espObjects[npc]
-
-        if espData then
-            espData.highlight.Position = worldPivot.Position
-            espData.textLabel.Text = npc.Name .. " | " .. math.floor(distance) .. " studs"
+    for _, part in ipairs(workspace:GetDescendants()) do
+        if part:IsA("BasePart") and (part.Position - position).Magnitude <= 20 then
+            part.CanCollide = state
         end
     end
 end
 
--- Function to remove all ESP
-local function removeESP()
-    ESPFolder:ClearAllChildren()
-    espObjects = {}
+local function toggleNoclip()
+    toggled = not toggled
+    setCollision(not toggled)
+    print("Noclip:", toggled and "ON" or "OFF")
 end
 
--- Toggle ESP with "K" key
-local UserInputService = game:GetService("UserInputService")
-UserInputService.InputBegan:Connect(function(input, gameProcessed)
-    if gameProcessed then return end
-    if input.KeyCode == Enum.KeyCode.K then
-        espEnabled = not espEnabled
-        if not espEnabled then
-            removeESP()
-        end
-    end
-end)
-
--- Constantly check for new NPCs and update distances
-RunService.RenderStepped:Connect(function()
-    if espEnabled then
-        updateESP()
+userInputService.InputBegan:Connect(function(input, gameProcessed)
+    if not gameProcessed and input.KeyCode == Enum.KeyCode[Keybind] then
+        toggleNoclip()
     end
 end)
