@@ -1,0 +1,32 @@
+local Services = {
+	game:GetService("Workspace"),
+	game:GetService("Players"),
+	game:GetService("ReplicatedStorage"),
+	game:GetService("ReplicatedFirst"),
+	game:GetService("Lighting"),
+	game:GetService("StarterGui"),
+	game:GetService("StarterPack"),
+	game:GetService("StarterPlayer"),
+	game:GetService("SoundService"),
+	game:GetService("Chat"),
+	game:GetService("LocalizationService"),
+	game:GetService("Teams"),
+}
+
+for _, service in pairs(Services) do
+	service.DescendantAdded:Connect(function(descendant)
+		print("[ADDED]", descendant:GetFullName(), "Class:", descendant.ClassName)
+	end)
+
+	service.DescendantRemoving:Connect(function(descendant)
+		print("[REMOVED]", descendant:GetFullName(), "Class:", descendant.ClassName)
+	end)
+end
+
+game.DescendantAdded:Connect(function(descendant)
+	print("[ADDED TO GAME]", descendant:GetFullName(), "Class:", descendant.ClassName)
+end)
+
+game.DescendantRemoving:Connect(function(descendant)
+	print("[REMOVED FROM GAME]", descendant:GetFullName(), "Class:", descendant.ClassName)
+end)
