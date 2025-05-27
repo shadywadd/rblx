@@ -1,0 +1,66 @@
+local Services = {
+	game:GetService("Workspace"),
+	game:GetService("Players"),
+	game:GetService("ReplicatedStorage"),
+	game:GetService("ReplicatedFirst"),
+	game:GetService("Lighting"),
+	game:GetService("StarterGui"),
+	game:GetService("StarterPack"),
+	game:GetService("StarterPlayer"),
+	game:GetService("SoundService"),
+	game:GetService("Chat"),
+	game:GetService("LocalizationService"),
+	game:GetService("Teams"),
+}
+
+local printedEvents = {}
+
+local function printOnce(tag, data)
+	local key = tag .. " | " .. data
+	if not printedEvents[key] then
+		print("[" .. tag .. "]", data)
+		printedEvents[key] = true
+	end
+end
+
+for _, service in pairs(Services) do
+	service.DescendantAdded:Connect(function(descendant)
+		printOnce("ADDED", descendant:GetFullName() .. " (Class: " .. descendant.ClassName .. ")")
+	end)
+
+	service.DescendantRemoving:Connect(function(descendant)
+		printOnce("REMOVED", descendant:GetFullName() .. " (Class: " .. descendant.ClassName .. ")")
+	end)
+end
+
+local function monitorProperties(instance)
+	if instance:IsA("BasePart") then
+		instance:GetPropertyChangedSignal("Position"):Connect(function()
+			local value = instance:GetFullName() .. " moved to " .. tostring(instance.Position)
+			printOnce("POSITION CHANGED", value)
+		end)
+	elseif instance:IsA("RemoteEvent") or instance:IsA("RemoteFunction") then
+		instance:GetPropertyChangedSignal("Name"):Connect(function()
+			local value = instance:GetFullName() .. " renamed to " .. instance.Name
+			printOnce("NAME CHANGED", value)
+		end)
+	end
+end
+
+for _, service in pairs(Services) do
+	for _, descendant in pairs(service:GetDescendants()) do
+		monitorProperties(descendant)
+	end
+
+	service.DescendantAdded:Connect(function(descendant)
+		monitorProperties(descendant)
+	end)
+end
+
+game.DescendantAdded:Connect(function(descendant)
+	printOnce("ADDED TO GAME", descendant:GetFullName() .. " (Class: " .. descendant.ClassName .. ")")
+end)
+
+game.DescendantRemoving:Connect(function(descendant)
+	printOnce("REMOVED FROM GAME", descendant:GetFullName() .. " (Class: " .. descendant.ClassName .. ")")
+end)
