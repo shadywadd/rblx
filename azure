@@ -1,0 +1,39 @@
+local CoreGui = game:GetService("CoreGui")
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+
+local suspiciousNames = {
+	"TeleportsSector",
+	"AimbotToggle",
+	"ESPSettings",
+	"main",
+	"SilentAimSector",
+	"FlyToggle",
+}
+
+local printed = {}
+
+local function printOnce(key)
+	if not printed[key] then
+		print("[AntiCheat GUI Detection]", key)
+		printed[key] = true
+	end
+end
+
+local function scanForSuspiciousDescendants()
+	for _, descendant in ipairs(CoreGui:GetDescendants()) do
+		if descendant:IsA("Instance") then
+			for _, badName in pairs(suspiciousNames) do
+				if descendant.Name == badName then
+					printOnce("Suspicious GUI Detected: " .. descendant:GetFullName())
+					LocalPlayer:Kick("Exploit GUI detected: " .. badName)
+				end
+			end
+		end
+	end
+end
+
+while true do
+	scanForSuspiciousDescendants()
+	wait(3)
+end
