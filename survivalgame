@@ -4,6 +4,138 @@ local RunService = game:GetService("RunService")
 local UIS = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
 
+local walkSpeed = 30
+local jumpHeight = 100
+
+-- State (shared)
+local equipped = false
+local cows = {}
+local anchored = false
+
+local brightLoop
+local fullbrightEnabled = false
+
+-- Services
+local ProximityPromptService = game:GetService("ProximityPromptService")
+
+-- Keep a reference to the connection so we can disconnect it if needed
+local PromptButtonHoldBeganConnection = nil
+
+-- Function to enable instant proximity prompts
+local function enableInstantProximityPrompts()
+    -- Disconnect existing connection if it exists
+    if PromptButtonHoldBeganConnection then
+        PromptButtonHoldBeganConnection:Disconnect()
+    end
+
+    -- Force all future prompts to have 0 hold duration
+    ProximityPromptService.PromptShown:Connect(function(prompt)
+        pcall(function()
+            prompt.HoldDuration = 0
+        end)
+    end)
+
+    -- Force all existing prompts to 0 hold duration
+    for _, v in ipairs(workspace:GetDescendants()) do
+        if v:IsA("ProximityPrompt") then
+            pcall(function()
+                v.HoldDuration = 0
+            end)
+        end
+    end
+
+    -- Hook prompt firing to hold begin
+    PromptButtonHoldBeganConnection = ProximityPromptService.PromptButtonHoldBegan:Connect(function(prompt)
+        pcall(function()
+            prompt.HoldDuration = 0
+        end)
+        fireproximityprompt(prompt)
+    end)
+end
+
+local function brightFunc()
+	Lighting.Brightness = 2
+	Lighting.ClockTime = 14
+	Lighting.FogEnd = 100000
+	Lighting.GlobalShadows = false
+	Lighting.OutdoorAmbient = Color3.fromRGB(128, 128, 128)
+end
+
+-- CowPointer Initialization Function
+local function InitializeCowPointer()
+	local player = Players.LocalPlayer
+	local mouse = player:GetMouse()
+
+	-- Create Tool
+	local tool = Instance.new("Tool")
+	tool.Name = "CowPointer"
+	tool.RequiresHandle = false
+	tool.CanBeDropped = false
+	tool.Parent = player:WaitForChild("Backpack")
+
+	-- Utility: Update list of cows
+	local function updateCows()
+		cows = {}
+		for _, obj in pairs(workspace:GetChildren()) do
+			if obj.Name == "Cow" and obj:FindFirstChild("Humanoid") then
+				table.insert(cows, obj)
+				obj.Humanoid.WalkSpeed = walkSpeed
+				obj.Humanoid.JumpHeight = jumpHeight
+			end
+		end
+	end
+
+	-- Equip/Unequip behavior
+	tool.Equipped:Connect(function()
+		equipped = true
+		updateCows()
+	end)
+
+	tool.Unequipped:Connect(function()
+		equipped = false
+	end)
+
+	-- Move cows to mouse location
+	RunService.RenderStepped:Connect(function()
+		if equipped and mouse.Hit then
+			local targetPos = mouse.Hit.Position
+			for _, cow in pairs(cows) do
+				if cow and cow:FindFirstChild("Humanoid") then
+					cow.Humanoid.WalkToPoint = targetPos
+				end
+			end
+		end
+	end)
+
+	-- Key press behavior
+	UserInputService.InputBegan:Connect(function(input, gameProcessed)
+		if not equipped or gameProcessed then return end
+
+		if input.KeyCode == Enum.KeyCode.H then
+			for _, cow in pairs(cows) do
+				if cow and cow:FindFirstChild("Humanoid") then
+					cow.Humanoid.Jump = true
+				end
+			end
+
+		elseif input.KeyCode == Enum.KeyCode.L then
+			updateCows()
+			print("Cows remapped")
+
+		elseif input.KeyCode == Enum.KeyCode.Q then
+			anchored = not anchored
+			print("Anchored:", anchored)
+			for _, cow in pairs(cows) do
+				for _, part in pairs(cow:GetDescendants()) do
+					if part:IsA("BasePart") then
+						part.Anchored = anchored
+					end
+				end
+			end
+		end
+	end)
+end
+
 local function giveWeaponStealerTool(player)
 	local mouse = player:GetMouse()
 
@@ -211,6 +343,75 @@ MainTab:CreateSlider({
     Callback = function(Value)
         desiredWalkspeed = Value
     end
+})
+
+local Button = MainTab:CreateButton({
+   Name = "cow mover",
+   Callback = function()
+     InitializeCowPointer()
+   end,
+})
+
+local Input = MainTab:CreateInput({
+   Name = "Set Cow Walk Speed",
+   CurrentValue = "",
+   PlaceholderText = "Enter new speed (number)",
+   RemoveTextAfterFocusLost = false,
+   Flag = "Input1",
+   Callback = function(Text)
+       local value = tonumber(Text)
+       if value then
+           walkSpeed = value
+           print("New walk speed set to:", walkSpeed)
+       else
+           warn("Invalid input: please enter a number")
+       end
+   end,
+})
+
+local Input = MainTab:CreateInput({
+   Name = "Set Cow Jump Height",
+   CurrentValue = "",
+   PlaceholderText = "Enter new speed (number)",
+   RemoveTextAfterFocusLost = false,
+   Flag = "Input1",
+   Callback = function(Text)
+       local value = tonumber(Text)
+       if value then
+           jumpHeight = value
+           print("New walk speed set to:", jumpHeight)
+       else
+           warn("Invalid input: please enter a number")
+       end
+   end,
+})
+
+local Button = MainTab:CreateToggle({
+   Name = "Toggle Fullbright",
+   CurrentValue = false,
+   Callback = function(enabled)
+      fullbrightEnabled = enabled
+      if enabled then
+         brightFunc()
+         brightLoop = RunService.RenderStepped:Connect(brightFunc)
+      else
+         if brightLoop then
+            brightLoop:Disconnect()
+            brightLoop = nil
+         end
+      end
+   end
+})
+
+local Button = MainTab:CreateButton({
+    Name = "Instant Proximity Prompts",
+    Callback = function()
+        if fireproximityprompt then
+            enableInstantProximityPrompts()
+        else
+            warn("Your exploit does not support fireproximityprompt")
+        end
+    end,
 })
 
 -- Initialize
