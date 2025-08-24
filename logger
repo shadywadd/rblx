@@ -1,4 +1,4 @@
-local Targets = {"4sh", "anime, gtk", "sync"}
+local Niggas = {"4sh", "anime, gtk", "sync"}
 
 local Players = game:GetService("Players")
 local Player = Players.LocalPlayer
